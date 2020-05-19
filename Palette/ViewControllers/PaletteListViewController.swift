@@ -1,73 +1,107 @@
-//
-//  PaletteListViewController.swift
-//  Palette
-//
-//  Created by DevMountain on 4/1/19.
-//  Copyright © 2019 trevorAdcock. All rights reserved.
-//
-
 import UIKit
 
 class PaletteListViewController: UIViewController {
-    
-    var photos: [UnsplashPhoto] = []
     
     var safeArea: UILayoutGuide {
         return self.view.safeAreaLayoutGuide
     }
     
-    var buttons: [UIButton] {
-        return [randomButton, featuredButton, doubleRainbowButton]
+    var photos: [UnsplashPhoto] = []
+    // Contains all of our buttons
+    var listOfBtns: [UIButton] {
+        return [featureButton, randomButton, doubleRainbowButton]
     }
     
     override func loadView() {
         super.loadView()
+        
+        // Added-Subviews
         addAllSubViews()
-        setUpStackView()
-        paletteTableView.anchor(top: buttonStackView.bottomAnchor, bottom: safeArea.bottomAnchor, leading: safeArea.leadingAnchor, trailing: safeArea.trailingAnchor, paddingTop: 8, paddingBottom: 0, paddingLeft: 0, paddingRight: 0)
+        // Add Constraints to our stackview
+        setupBtnStkViews()
+        
+        constraintTableView()
+       
     }
     
     override func viewDidLoad() {
         super.viewDidLoad()
-        view.backgroundColor = .white
-        configureTableView()
-        activateButtons()
-        searchForCategory(.featured)
-        selectButton(featuredButton)
-    }
-    
-    func addAllSubViews(){
-        view.addSubview(featuredButton)
-        view.addSubview(randomButton)
-        view.addSubview(doubleRainbowButton)
-        view.addSubview(buttonStackView)
-        view.addSubview(paletteTableView)
-    }
-    
-    func setUpStackView() {
-        buttonStackView.translatesAutoresizingMaskIntoConstraints = false
-        buttonStackView.addArrangedSubview(featuredButton)
-        buttonStackView.addArrangedSubview(randomButton)
-        buttonStackView.addArrangedSubview(doubleRainbowButton)
-        buttonStackView.translatesAutoresizingMaskIntoConstraints = false
-        buttonStackView.topAnchor.constraint(equalTo: safeArea.topAnchor).isActive = true
-        buttonStackView.leadingAnchor.constraint(equalTo: safeArea.leadingAnchor, constant: 16).isActive = true
-        buttonStackView.trailingAnchor.constraint(equalTo: safeArea.trailingAnchor, constant: -16).isActive = true
         
-        //Same as above:
-//        buttonStackView.anchor(top: safeArea.topAnchor, bottom: nil, leading: safeArea.leadingAnchor, trailing: safeArea.trailingAnchor, paddingTop: 0, paddingBottom: 0, paddingLeft: SpacingConstants.outerHorizontalPadding, paddingRight: SpacingConstants.outerHorizontalPadding)
+        self.view.backgroundColor = .purple
+         configureTableView()
+        activateBtns()
+        UnsplashService.shared.fetchFromUnsplash(for: .featured) { (unsplashPhotos) in
+            DispatchQueue.main.async {
+                guard let unsplashPhotos = unsplashPhotos else { return }
+                self.photos = unsplashPhotos
+                self.paletteTableView.reloadData()
+            }
+        }
+    }
+    
+    // MARK: _@HELPER-METHODS
+    /**©---------------------------------------------©*/
+    func addAllSubViews() {
+        // Added-Subviews
+        self.view.addSubview(featureButton)
+        self.view.addSubview(randomButton)
+        self.view.addSubview(doubleRainbowButton)
+        self.view.addSubview(btnStackView)
+        self.view.addSubview(paletteTableView)
+    }
+    
+    func setupBtnStkViews() {
+        // Add Constraints to our stackview
+        btnStackView.addArrangedSubview(featureButton)
+        btnStackView.addArrangedSubview(randomButton)
+        btnStackView.addArrangedSubview(doubleRainbowButton)
+        
+        // MARK: _topAnchor
+        btnStackView.topAnchor
+            .constraint(equalTo: safeArea.topAnchor, constant: 8)
+            .isActive = true
+        // MARK: _leadingAnchor
+        btnStackView.leadingAnchor
+            .constraint(equalTo: safeArea.leadingAnchor, constant: 8)
+            .isActive = true
+        // MARK: _trailingAnchor
+        btnStackView.trailingAnchor
+            .constraint(equalTo: safeArea.trailingAnchor, constant: -8)
+            .isActive = true
+        
+    }
+    
+    func constraintTableView() {
+        paletteTableView.anchor(top: btnStackView.bottomAnchor, bottom: safeArea.bottomAnchor, leading: safeArea.leadingAnchor, trailing: safeArea.trailingAnchor, paddingTop: 0, paddingBtm: 0, paddingLeading: 0, paddingTrailing: 0)
     }
     
     func configureTableView() {
-        paletteTableView.dataSource = self
         paletteTableView.delegate = self
-        paletteTableView.register(PaletteTableViewCell.self, forCellReuseIdentifier: "colorCell")
-        paletteTableView.allowsSelection = false
+        paletteTableView.dataSource = self
+        paletteTableView.register(PaletteTableViewCell.self, forCellReuseIdentifier: "photoCell")
     }
     
-    func activateButtons() {
-        buttons.forEach{ $0.addTarget(self, action: #selector(searchButtonTapped(sender:)), for: .touchUpInside)}
-    }
+    @objc func selectBtn(sender: UIButton) {
+         listOfBtns.forEach { $0.setTitleColor(.lightGray, for: .normal) }
+         sender.setTitleColor(UIColor(named: "devmountainBlue"), for: .normal)
+        
+        switch sender {
+            case featureButton:
+                searchForCategory(.featured)
+            case randomButton:
+                searchForCategory(.random)
+            case doubleRainbowButton:
+                searchForCategory(.doubleRainbow)
+            default:
+                searchForCategory(.featured)
+        }
+     }
+     
+     // Setup our @IBAction programmactially by creating a target for each button
+     func activateBtns() {
+         listOfBtns.forEach { $0.addTarget(self, action: #selector(selectBtn(sender:)), for: .touchUpInside) }
+        featureButton.setTitleColor(UIColor(named: "devmountainBlue"), for: .normal)
+     }
     
     func searchForCategory(_ unsplashRoute: UnsplashRoute) {
         UnsplashService.shared.fetchFromUnsplash(for: unsplashRoute) { (unsplashPhotos) in
@@ -78,85 +112,83 @@ class PaletteListViewController: UIViewController {
             }
         }
     }
+    /**©---------------------------------------------©*/
     
-    func selectButton(_ button: UIButton) {
-        buttons.forEach{ $0.setTitleColor(UIColor.lightGray, for: .normal)}
-        button.setTitleColor(UIColor(named: "devmountainBlue"), for: .normal)
-    }
-    
-    //MARK: - Views
-    let featuredButton: UIButton = {
-        let button = UIButton()
-        button.setTitleColor(.black, for: .normal)
-        button.setTitle("Featured", for: .normal)
-        button.contentHorizontalAlignment = .center
-        return button
+    // MARK: _@featureButton
+    /**©---------------------------------------------©*/
+    let featureButton: UIButton = {
+        let btn = UIButton()
+        btn.setTitle("Features", for: .normal)
+        btn.setTitleColor(.lightGray, for: .normal)
+        btn.contentHorizontalAlignment = .center
+        return btn
     }()
     
+    
+    // MARK: _@randomButton
     let randomButton: UIButton = {
-        let button = UIButton()
-        button.setTitleColor(.black, for: .normal)
-        button.setTitle("Random", for: .normal)
-        button.contentHorizontalAlignment = .center
-        return button
+        let btn = UIButton()
+        btn.setTitle("Random", for: .normal)
+        btn.setTitleColor(.lightGray, for: .normal)
+        btn.contentHorizontalAlignment = .center
+        return btn
     }()
     
+    // MARK: _@doubleRainbowButton
     let doubleRainbowButton: UIButton = {
-        let button = UIButton()
-        button.setTitleColor(.black, for: .normal)
-        button.setTitle("Double Rainbow", for: .normal)
-        button.contentHorizontalAlignment = .center
-        return button
+        let btn = UIButton()
+        btn.setTitle("Double Rainbow", for: .normal)
+        btn.setTitleColor(.lightGray, for: .normal)
+        btn.contentHorizontalAlignment = .center
+        return btn
     }()
     
-    let buttonStackView: UIStackView = {
-        let stackView = UIStackView()
-        stackView.axis = .horizontal
-        stackView.alignment = .fill
-        stackView.distribution = .equalCentering
-        return stackView
+    // MARK: -Views
+    let btnStackView: UIStackView = {
+        let stkView  = UIStackView()
+        stkView.axis = .horizontal
+        stkView.alignment = .fill
+        stkView.distribution = .equalSpacing
+        stkView.translatesAutoresizingMaskIntoConstraints = false
+        
+        return stkView
     }()
+    /**©---------------------------------------------©*/
     
     let paletteTableView: UITableView = {
         let tableView = UITableView()
         return tableView
     }()
     
-    //MARK: - Actions
-    @objc func searchButtonTapped(sender: UIButton) {
-        selectButton(sender)
-        switch sender{
-        case featuredButton:
-            searchForCategory(.featured)
-        case randomButton:
-            searchForCategory(.random)
-        case doubleRainbowButton:
-            searchForCategory(.doubleRainbow)
-        default:
-            print("Unanticipated button tap")
-        }
-    }
-}
+}// END OF CLASS
 
 extension PaletteListViewController: UITableViewDataSource, UITableViewDelegate {
     
     func tableView(_ tableView: UITableView, heightForRowAt indexPath: IndexPath) -> CGFloat {
-        let imageViewSpace: CGFloat = (view.frame.width - (2 * SpacingConstants.outerHorizontalPadding))
-        let titleLabelSpace: CGFloat = SpacingConstants.oneLineElementHight
-        let colorPaletteViewSpace: CGFloat = SpacingConstants.twoLineElementHieght
-        let verticalPadding: CGFloat = (3 * SpacingConstants.verticalObjectBuffer)
-        let outerVerticalPadding: CGFloat = (2 * SpacingConstants.outerVerticalPadding)
-        return imageViewSpace + titleLabelSpace + colorPaletteViewSpace + verticalPadding + outerVerticalPadding
+        typealias s = SpacingConst
+        
+        let imgViewSpace: CGFloat = (view.frame.width - (2 * s.outerHorizintalPadding))
+        let outerVerticalPaddingSpace: CGFloat = (2 * s.outerVerticalPadding)
+        
+        let objBuffer: CGFloat = s.verticalObjBuffer
+        let labelSpace: CGFloat = (2 * s.smallElementHeight)
+        
+        let colorPaletteViewSpace: CGFloat = s.mediumElementHeight
+        let result = imgViewSpace + outerVerticalPaddingSpace + labelSpace + objBuffer + colorPaletteViewSpace
+        
+        return result
     }
     
     func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
-        return photos.count
+        photos.count
     }
     
     func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
-        let cell = tableView.dequeueReusableCell(withIdentifier: "colorCell", for: indexPath) as! PaletteTableViewCell
-        let unsplashPhoto = photos[indexPath.row]
-        cell.unsplashPhoto = unsplashPhoto
+        let cell = tableView.dequeueReusableCell(withIdentifier: "photoCell", for: indexPath) as! PaletteTableViewCell
+        
+        let photo = photos[indexPath.row]
+        cell.photo = photo
+        
         return cell
     }
 }

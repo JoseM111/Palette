@@ -1,48 +1,40 @@
-//
-//  PaletteTableViewCell.swift
-//  Palette
-//
-//  Created by DevMountain on 4/1/19.
-//  Copyright © 2019 trevorAdcock. All rights reserved.
-//
-
 import UIKit
 
 class PaletteTableViewCell: UITableViewCell {
-    
-    //MARK: - Properties
-    var unsplashPhoto: UnsplashPhoto? {
-        didSet{
-           updateViews()
+
+    var photo: UnsplashPhoto? {
+        didSet {
+            updateViews()
         }
     }
     
     override func layoutSubviews() {
         super.layoutSubviews()
-        setUpViews()
+        // Has to be called first
+        addAllSubViews()
+        // Call second
+        constrainImgView()
+        // Call third
+        constrainTitleLabel()
+        constrainColorPalleteView()
     }
     
-    override func prepareForReuse() {
-        super.prepareForReuse()
-        colorPaletteView.colors = [UIColor(named: "offWhite")!]
+    func updateViews() {
+        guard let photo = photo else { return }
+        fetchAndSetTheImage(for: photo)
+        fetchAndSetColorSTack(for: photo)
+        paletteTitleLabel.text = photo.description ?? "NO DESCRIPTION AVAILABLE"
     }
     
-    func updateViews(){
-        guard let unsplashPhoto = unsplashPhoto else { return }
-        fetchAndSetImage(for: unsplashPhoto)
-        fetchAndSetColors(for: unsplashPhoto)
-        paletteTitleLabel.text = unsplashPhoto.description
-    }
-    
-    func fetchAndSetImage(for unsplashPhoto: UnsplashPhoto) {
+    func fetchAndSetTheImage(for unsplashPhoto: UnsplashPhoto) {
         UnsplashService.shared.fetchImage(for: unsplashPhoto) { (image) in
             DispatchQueue.main.async {
-                self.paletteImageView.image = image
+                self.paletteImgView.image = image
             }
         }
     }
     
-    func fetchAndSetColors(for unsplashPhoto: UnsplashPhoto) {
+    func fetchAndSetColorSTack(for unsplashPhoto: UnsplashPhoto) {
         ImaggaService.shared.fetchColorsFor(imagePath: unsplashPhoto.urls.regular) { (colors) in
             DispatchQueue.main.async {
                 guard let colors = colors else { return }
@@ -51,38 +43,54 @@ class PaletteTableViewCell: UITableViewCell {
         }
     }
     
-    func setUpViews(){
-        addAllSubviews()
-        let imageWidth = (contentView.frame.width - (SpacingConstants.outerHorizontalPadding * 2))
-        paletteImageView.anchor(top: contentView.topAnchor, bottom: nil, leading: contentView.leadingAnchor, trailing: contentView.trailingAnchor, paddingTop: SpacingConstants.outerVerticalPadding, paddingBottom: 0, paddingLeft: SpacingConstants.outerHorizontalPadding, paddingRight: SpacingConstants.outerHorizontalPadding, width:imageWidth , height: imageWidth)
-        paletteTitleLabel.anchor(top: paletteImageView.bottomAnchor, bottom: nil, leading: contentView.leadingAnchor, trailing: contentView.trailingAnchor, paddingTop: SpacingConstants.verticalObjectBuffer, paddingBottom: 0, paddingLeft: SpacingConstants.outerHorizontalPadding, paddingRight: SpacingConstants.outerHorizontalPadding, width: nil, height: SpacingConstants.oneLineElementHight)
-        colorPaletteView.anchor(top: paletteTitleLabel.bottomAnchor, bottom: contentView.bottomAnchor, leading: contentView.leadingAnchor, trailing: contentView.trailingAnchor, paddingTop: SpacingConstants.verticalObjectBuffer, paddingBottom: SpacingConstants.outerVerticalPadding, paddingLeft: SpacingConstants.outerHorizontalPadding, paddingRight: SpacingConstants.outerHorizontalPadding, width: nil, height: SpacingConstants.twoLineElementHieght)
-        colorPaletteView.clipsToBounds = true
-        colorPaletteView.layer.cornerRadius = (SpacingConstants.twoLineElementHieght / 2)
+    // MARK: -Subviews
+    func addAllSubViews() {
+        self.addSubview(paletteImgView)
+        self.addSubview(paletteTitleLabel)
+        self.addSubview(colorPaletteView)
     }
     
-    func addAllSubviews() {
-        addSubview(paletteImageView)
-        addSubview(paletteTitleLabel)
-        addSubview(colorPaletteView)
+    func constrainImgView() {
+        typealias s = SpacingConst
+        let imgViewWidth = self.contentView.frame.width - (2 * s.outerHorizintalPadding)
+        
+        paletteImgView.anchor(top: self.contentView.topAnchor, bottom: nil, leading: self.contentView.leadingAnchor, trailing: self.contentView.trailingAnchor, paddingTop: s.outerVerticalPadding, paddingBtm: 0, paddingLeading: s.outerHorizintalPadding, paddingTrailing: s.outerHorizintalPadding, width:  imgViewWidth, height: imgViewWidth)
     }
     
-    //MARK: - Subviews
-    lazy var paletteImageView: UIImageView = {
-        let imageView = UIImageView()
-        imageView.layer.masksToBounds = true
-        imageView.layer.cornerRadius = 12
-        imageView.contentMode = .scaleAspectFill
-        return imageView
+    func constrainTitleLabel() {
+        typealias s = SpacingConst
+        
+        paletteTitleLabel.anchor(top: paletteImgView.bottomAnchor, bottom: nil, leading: self.contentView.leadingAnchor, trailing: self.contentView.trailingAnchor, paddingTop: s.verticalObjBuffer, paddingBtm: 0, paddingLeading: s.outerHorizintalPadding, paddingTrailing: s.smallElementHeight, width: nil, height: s.smallElementHeight)
+    }
+    
+    func constrainColorPalleteView() {
+        typealias s = SpacingConst
+        
+        colorPaletteView.anchor(top: paletteTitleLabel.bottomAnchor, bottom: contentView.bottomAnchor, leading: contentView.leadingAnchor, trailing: contentView.trailingAnchor, paddingTop: s.verticalObjBuffer, paddingBtm: 0, paddingLeading: s.outerHorizintalPadding, paddingTrailing: s.outerHorizintalPadding, width: nil, height: s.mediumElementHeight)
+    }
+    
+    // MARK: -views
+    /**©---------------------------------------------©*/
+    let paletteImgView: UIImageView = {
+        let imgView = UIImageView()
+        imgView.layer.masksToBounds = true
+        imgView.contentMode = .scaleAspectFill
+        imgView.backgroundColor = .red
+        
+        return imgView
     }()
     
-    lazy var paletteTitleLabel: UILabel = {
+    let paletteTitleLabel: UILabel = {
         let label = UILabel()
+        label.text = "Alias-The-Great"
+        label.textAlignment = .center
         return label
     }()
     
-    lazy var colorPaletteView: ColorPaletteView = {
-        let paletteView = ColorPaletteView()
-        return paletteView
+    let colorPaletteView: ColorPalletView = {
+        let palleteView = ColorPalletView()
+        
+        return palleteView
     }()
-}
+    /**©---------------------------------------------©*/
+}// END OF CLASS
